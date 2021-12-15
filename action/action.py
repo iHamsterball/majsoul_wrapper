@@ -157,17 +157,19 @@ class GUIInterface:
         # load template imgs
         join = os.path.join
         root = os.path.dirname(__file__)
-        def load(name): return cv2.imread(join(root, 'template', name))
+        def load(name): return cv2.imread(join(root, 'template', name), cv2.IMREAD_UNCHANGED)
         self.menuImg = load('menu.png')         # 初始菜单界面
         if (type(self.menuImg)==type(None)):
             raise FileNotFoundError("menu.png not found, please check the Chinese path")
+        # Drop alpha channel
+        self.menuImg = cv2.cvtColor(self.menuImg, cv2.COLOR_BGRA2BGR)
         assert(self.menuImg.shape == (1080, 1920, 3))
-        self.chiImg = load('chi.png')
-        self.pengImg = load('peng.png')
-        self.gangImg = load('gang.png')
-        self.huImg = load('hu.png')
-        self.zimoImg = load('zimo.png')
-        self.tiaoguoImg = load('tiaoguo.png')
+        self.chiImg = load('chii.png')
+        self.pengImg = load('pon.png')
+        self.gangImg = load('kan.png')
+        self.huImg = load('ron.png')
+        self.zimoImg = load('tsumo.png')
+        self.tiaoguoImg = load('pass.png')
         self.liqiImg = load('liqi.png')
         # load classify model
         self.classify = Classify()
@@ -264,11 +266,15 @@ class GUIInterface:
         n, m, _ = buttonImg.shape
         n = int(n*zoom)
         m = int(m*zoom)
-        templ = cv2.resize(buttonImg, (m, n))
+        resized = cv2.resize(buttonImg, (m, n))
         x0, y0 = np.int32(PosTransfer([595, 557], self.M))
         x1, y1 = np.int32(PosTransfer([1508, 912], self.M))
         img = screenShot()[y0:y1, x0:x1, :]
-        T = cv2.matchTemplate(img, templ, cv2.TM_SQDIFF, mask=templ.copy())
+
+        templ = resized[:, :, 0:3]
+        alpha = resized[:, :, 3]
+        alpha = cv2.merge([alpha, alpha, alpha])
+        T = cv2.matchTemplate(img, templ, cv2.TM_SQDIFF, mask=alpha)
         _, _, (x, y), _ = cv2.minMaxLoc(T)
         if DEBUG:
             T = np.exp((1-T/T.max())*10)
@@ -338,7 +344,7 @@ class GUIInterface:
         # 在终局以后点击确定跳转回菜单主界面
         x, y = np.int32(PosTransfer((1785, 1003), self.M))  # 终局确认按钮
         while True:
-            time.sleep(5)
+            time.sleep(8)
             x0, y0 = np.int32(PosTransfer([0, 0], self.M))
             x1, y1 = np.int32(PosTransfer(Layout.size, self.M))
             img = screenShot()
@@ -367,4 +373,5 @@ class GUIInterface:
         pyautogui.click(x, y)
         time.sleep(2)
         x, y = np.int32(PosTransfer(Layout.menuButtons[0], self.M))  # 四人东
+        # x, y = np.int32(PosTransfer(Layout.menuButtons[1], self.M))  # 四人南
         pyautogui.click(x, y)
