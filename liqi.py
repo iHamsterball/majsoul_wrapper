@@ -27,6 +27,12 @@ class MsgType(Enum):
     Req = 2
     Res = 3
 
+    def __str__(self):
+        return '%s' % self.value
+
+    def __repr__(self):
+        return '%s' % self.value
+
 
 class LiqiProto:
 
