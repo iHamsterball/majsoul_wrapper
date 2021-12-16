@@ -9,6 +9,7 @@ import pyautogui
 import numpy as np
 
 from .classifier import Classify
+from .exception import TileNotFoundException, CombinationNotFoundException
 from ..sdk import Operation
 
 pyautogui.PAUSE = 0         # 函数执行后暂停时间
@@ -189,8 +190,7 @@ class GUIInterface:
                 # out of screen
                 pyautogui.moveTo(x=self.waitPos[0], y=self.waitPos[1])
                 return True
-        raise Exception(
-            'GUIInterface.discardTile tile not found. L:', L, 'tile:', tile)
+        raise TileNotFoundException('GUIInterface.discardTile tile not found. L:', L, 'tile:', tile)
         return False
 
     def actionChiPengGang(self, type_: Operation, tiles: List[str]):
@@ -336,8 +336,7 @@ class GUIInterface:
                 time.sleep(1)
                 pyautogui.moveTo(x=self.waitPos[0], y=self.waitPos[1])
                 return True
-        raise Exception('combination not found, tiles:',
-                        tiles, ' combination:', result)
+        raise CombinationNotFoundException('combination not found, tiles:', tiles, ' combination:', result)
         return False
 
     def actionReturnToMenu(self):
