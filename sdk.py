@@ -177,7 +177,7 @@ class MajsoulHandler:
                     newScores = data['scores']
                     return self.hule(hand, huTile, seat, zimo, liqi, doras, liDoras, fan, fu, oldScores, deltaScores, newScores)
                 elif action_name == 'ActionNoTile':
-                    #无牌流局
+                    # 无牌流局
                     players = data['players']
                     assert(len(players) == 4)
                     tingpai = [players[i].get('tingpai', False)
@@ -191,14 +191,18 @@ class MajsoulHandler:
                     deltaScores = scores.get('deltaScores', [0, 0, 0, 0])
                     return self.liuju(tingpai, hands, oldScores, deltaScores)
                 elif action_name == 'ActionAnGangAddGang':
-                    #暗杠加杠
+                    # 暗杠加杠
                     type_ = data['type']
                     seat = data.get('seat', 0)
                     tiles = data['tiles']
                     return self.anGangAddGang(type_, seat, tiles)
                 elif action_name == 'ActionLiuJu':
-                    #开局流局
+                    # 开局流局
                     return self.specialLiuju()
+                elif action_name == 'ActionBaBei':
+                    # 拔北
+                    # 如果需要另行处理
+                    pass
                 else:
                     raise NotImplementedError
         elif method in self.no_effect_method:
