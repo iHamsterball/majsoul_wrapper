@@ -282,8 +282,15 @@ class GUIInterface:
         templ = resized[:, :, 0:3]
         alpha = resized[:, :, 3]
         alpha = cv2.merge([alpha, alpha, alpha])
-        T = cv2.matchTemplate(img, templ, cv2.TM_SQDIFF, mask=alpha)
-        _, _, (x, y), _ = cv2.minMaxLoc(T)
+
+        # We can only use cv2.TM_SQDIFF or cv2.TM_CCORR_NORMED for transparent images
+        # Using maxLoc with cv2.TM_CCORR_NORMED is a bit more accurate than cv2.TM_SQDIFF
+
+        # T = cv2.matchTemplate(img, templ, cv2.TM_SQDIFF, mask=alpha)
+        # _, _, (x, y), _ = cv2.minMaxLoc(T)
+        T = cv2.matchTemplate(img, templ, cv2.TM_CCORR_NORMED, mask=alpha)
+        _, _, _, (x, y) = cv2.minMaxLoc(T)
+
         if DEBUG:
             T = np.exp((1-T/T.max())*10)
             T = T/T.max()
