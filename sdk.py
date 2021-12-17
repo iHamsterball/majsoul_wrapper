@@ -179,16 +179,16 @@ class MajsoulHandler:
                 elif action_name == 'ActionNoTile':
                     # 无牌流局
                     players = data['players']
-                    assert(len(players) == 4)
+                    assert(len(players) == 4 or len(players) == 3)
                     tingpai = [players[i].get('tingpai', False)
-                               for i in range(4)]
+                               for i in range(len(players))]
                     hands = [players[i]['hand'] if tingpai[i] else []
-                             for i in range(4)]
+                             for i in range(len(players))]
                     scores = data['scores']
                     assert(len(scores) == 1)
                     scores = scores[0]
                     oldScores = scores['oldScores']
-                    deltaScores = scores.get('deltaScores', [0, 0, 0, 0])
+                    deltaScores = scores.get('deltaScores', [0]*len(players))
                     return self.liuju(tingpai, hands, oldScores, deltaScores)
                 elif action_name == 'ActionAnGangAddGang':
                     # 暗杠加杠
