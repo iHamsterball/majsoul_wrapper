@@ -219,7 +219,7 @@ class GUIInterface:
     def actionLiuju(self):
         self.clickButton(self.liujuImg)
 
-    def actionNuku(self):
+    def actionBabei(self):
         self.clickButton(self.nukuImg)
 
     def calibrateMenu(self):
@@ -362,8 +362,8 @@ class GUIInterface:
                 print('Similarity:', S)
                 pyautogui.click(x=x, y=y, duration=0.5)
 
-    def actionBeginGame(self, level: int):
-        # 从开始界面点击匹配对局, level=0~4 (铜/银/金/玉/王座之间)
+    def actionBeginGame(self, level: int, match: int=0):
+        # 从开始界面点击匹配对局, level=0~4 (铜/银/金/玉/王座之间), mode=0~2 (四人东/四人南/三人东)
         time.sleep(2)
         x, y = np.int32(PosTransfer(Layout.duanWeiChang, self.M))
         pyautogui.click(x, y)
@@ -379,6 +379,8 @@ class GUIInterface:
         x, y = np.int32(PosTransfer(Layout.menuButtons[level], self.M))
         pyautogui.click(x, y)
         time.sleep(2)
-        x, y = np.int32(PosTransfer(Layout.menuButtons[0], self.M))  # 四人东
+        x, y = np.int32(PosTransfer(Layout.menuButtons[match], self.M))  # 默认：四人东
+        # x, y = np.int32(PosTransfer(Layout.menuButtons[0], self.M))  # 四人东
         # x, y = np.int32(PosTransfer(Layout.menuButtons[1], self.M))  # 四人南
+        # x, y = np.int32(PosTransfer(Layout.menuButtons[2], self.M))  # 三人东
         pyautogui.click(x, y)
