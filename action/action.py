@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # 获取屏幕信息，并通过视觉方法标定手牌与按钮位置，仿真鼠标点击操作输出
+from enum import Flag
 import os
 import time
 from typing import List, Tuple
@@ -277,25 +278,88 @@ class GUIInterface:
         resized = cv2.resize(buttonImg, (m, n))
         x0, y0 = np.int32(PosTransfer([595, 557], self.M))
         x1, y1 = np.int32(PosTransfer([1508, 912], self.M))
+
+        # Make sure the buttons have appeared
+        time.sleep(0.1)
         img = screenShot()[y0:y1, x0:x1, :]
 
         templ = resized[:, :, 0:3]
         alpha = resized[:, :, 3]
         alpha = cv2.merge([alpha, alpha, alpha])
 
-        # We can only use cv2.TM_SQDIFF or cv2.TM_CCORR_NORMED for transparent images
-        # Using maxLoc with cv2.TM_CCORR_NORMED is a bit more accurate than cv2.TM_SQDIFF
+        # Adjust brightness of mask layer to improve matching effect of both methods
+        hsv = cv2.cvtColor(alpha, cv2.COLOR_BGR2HSV)
+        h, s, v = cv2.split(hsv)
+        value = -14
+        v = cv2.add(v, value)
+        v[v > 255] = 255
+        v[v < 0] = 0
+        hsv = cv2.merge((h, s, v))
+        alpha = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
 
-        # T = cv2.matchTemplate(img, templ, cv2.TM_SQDIFF, mask=alpha)
-        # _, _, (x, y), _ = cv2.minMaxLoc(T)
-        T = cv2.matchTemplate(img, templ, cv2.TM_CCORR_NORMED, mask=alpha)
-        _, _, _, (x, y) = cv2.minMaxLoc(T)
+        # We can only use cv2.TM_SQDIFF or cv2.TM_CCORR_NORMED for transparent images
+        # Using cv2.TM_CCORR_NORMED is a bit more accurate than cv2.TM_SQDIFF
+        # However it brings more false positive result, especially pass button which is medium grey
+        # So we still need cv2.TM_SQDIFF to double check
+        TM_SQDIFF_THRESHOLD = 20000
+        TM_CCORR_NORMED_THRESHOLD = 0.025
+
+        T1 = cv2.matchTemplate(img, templ, cv2.TM_SQDIFF, mask=alpha)
+        minVal, _, (x, y), _ = cv2.minMaxLoc(T1)
+        T2 = cv2.matchTemplate(img, templ, cv2.TM_CCORR_NORMED, mask=alpha)
+        _, maxVal, _, (x, y) = cv2.minMaxLoc(T2)
+
+        def intersection(pt1, pt2):
+            (x1, y1) = pt1
+            (x2, y2) = pt2
+            if x1 < x2 and y1 < y2:
+                if x1 + m > x2 and y1 + n > y2:
+                    return True
+            elif x1 < x2 and y1 >= y2:
+                if x1 + m > x2 and y2 + n > y1:
+                    return True
+            elif x1 >= x2 and y1 < y2:
+                if x2 + m > x1 and y1 + n > y2:
+                    return True
+            elif x1 >= x2 and y1 >= y2:
+                if x2 + m > x1 and y2 + n > y1:
+                    return True
+            return False
+
+        candidates = list()
+        loc = np.where(T1 < minVal + TM_SQDIFF_THRESHOLD)
+        for pt in zip(*loc[::-1]):
+            candidates.append(pt)
+        loc = np.where(T2 > maxVal - TM_CCORR_NORMED_THRESHOLD)
+        flag = False
+        for pt in zip(*loc[::-1]):
+            if flag:
+                break
+            for candidate in candidates:
+                if intersection(candidate, pt):
+                    (x, y) = pt
+                    flag = True
+                    break
 
         if DEBUG:
-            T = np.exp((1-T/T.max())*10)
-            T = T/T.max()
-            cv2.imshow('T', T)
+            print('TM_SQDIFF: ', minVal)
+            print('TM_CCORR_NORMED: ', maxVal)
+
+            COLOR_SOFT_RED = (113, 117, 255)
+            COLOR_SOFT_GREEN = (105, 225, 185)
+            COLOR_SOFT_YELLOW = (102, 222, 255)
+
+            loc = np.where(T1 < minVal + TM_SQDIFF_THRESHOLD)
+            for pt in zip(*loc[::-1]):
+                cv2.rectangle(img, pt, (pt[0] + m, pt[1] + n), COLOR_SOFT_RED, 2)
+            loc = np.where(T2 > maxVal - TM_CCORR_NORMED_THRESHOLD)
+            for pt in zip(*loc[::-1]):
+                cv2.rectangle(
+                    img, pt, (pt[0] + m, pt[1] + n), COLOR_SOFT_GREEN, 2)
+            cv2.rectangle(img, (x, y), (x + m, y + n), COLOR_SOFT_YELLOW, 2)
+            cv2.imshow('result', img)
             cv2.waitKey(0)
+
         dst = img[y:y+n, x:x+m].copy()
         dst[templ == 0] = 0
         if Similarity(templ, dst) >= similarityThreshold:
