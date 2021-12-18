@@ -302,7 +302,13 @@ class GUIInterface:
         # However it brings more false positive result, especially pass button which is medium grey
         # So we still need cv2.TM_SQDIFF to double check
         TM_SQDIFF_THRESHOLD = 20000
-        TM_CCORR_NORMED_THRESHOLD = 0.025
+        TM_CCORR_NORMED_THRESHOLD = 0.01
+
+        RETRY_LIMIT = 10
+
+        COLOR_SOFT_RED = (113, 117, 255)
+        COLOR_SOFT_GREEN = (105, 225, 185)
+        COLOR_SOFT_YELLOW = (102, 222, 255)
 
         T1 = cv2.matchTemplate(img, templ, cv2.TM_SQDIFF, mask=alpha)
         minVal, _, (x, y), _ = cv2.minMaxLoc(T1)
@@ -329,33 +335,32 @@ class GUIInterface:
         candidates = list()
         loc = np.where(T1 < minVal + TM_SQDIFF_THRESHOLD)
         for pt in zip(*loc[::-1]):
+            if DEBUG:
+                cv2.rectangle(img, pt, (pt[0] + m, pt[1] + n), COLOR_SOFT_RED, 2)
             candidates.append(pt)
-        loc = np.where(T2 > maxVal - TM_CCORR_NORMED_THRESHOLD)
-        flag = False
-        for pt in zip(*loc[::-1]):
-            if flag:
+
+        def locate(retry=1):
+            if DEBUG:
+                print('TM_CCORR_NORMED_THRESHOLD: ', TM_CCORR_NORMED_THRESHOLD * retry)
+            loc = np.where((T2 > maxVal - TM_CCORR_NORMED_THRESHOLD * retry) & (T2 <= maxVal - TM_CCORR_NORMED_THRESHOLD * (retry - 1)))
+            for pt in zip(*loc[::-1]):
+                if DEBUG:
+                    cv2.rectangle(img, pt, (pt[0] + m, pt[1] + n), COLOR_SOFT_GREEN, 2)
+                for candidate in candidates:
+                    if intersection(candidate, pt):
+                        return pt
+            return None
+
+        for i in range(1, RETRY_LIMIT + 1):
+            pt = locate(retry=i)
+            if pt:
+                (x, y) = pt
                 break
-            for candidate in candidates:
-                if intersection(candidate, pt):
-                    (x, y) = pt
-                    flag = True
-                    break
 
         if DEBUG:
             print('TM_SQDIFF: ', minVal)
             print('TM_CCORR_NORMED: ', maxVal)
 
-            COLOR_SOFT_RED = (113, 117, 255)
-            COLOR_SOFT_GREEN = (105, 225, 185)
-            COLOR_SOFT_YELLOW = (102, 222, 255)
-
-            loc = np.where(T1 < minVal + TM_SQDIFF_THRESHOLD)
-            for pt in zip(*loc[::-1]):
-                cv2.rectangle(img, pt, (pt[0] + m, pt[1] + n), COLOR_SOFT_RED, 2)
-            loc = np.where(T2 > maxVal - TM_CCORR_NORMED_THRESHOLD)
-            for pt in zip(*loc[::-1]):
-                cv2.rectangle(
-                    img, pt, (pt[0] + m, pt[1] + n), COLOR_SOFT_GREEN, 2)
             cv2.rectangle(img, (x, y), (x + m, y + n), COLOR_SOFT_YELLOW, 2)
             cv2.imshow('result', img)
             cv2.waitKey(0)
