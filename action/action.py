@@ -147,6 +147,7 @@ def screenShot():
 class Layout:
     size = (1920, 1080)                                     # 界面长宽
     duanWeiChang = (1348, 321)                              # 段位场按钮
+    bisaiChang = (1348, 500)                                # 比赛场按钮
     menuButtons = [(1382, 406), (1382, 573), (1382, 740),
                    (1383, 885), (1393, 813)]   # 铜/银/金之间按钮
     tileSize = (95, 152)                                     # 自己牌的大小
@@ -456,4 +457,16 @@ class GUIInterface:
         pyautogui.click(x, y)
         time.sleep(2)
         x, y = np.int32(PosTransfer(Layout.menuButtons[match], self.M))  # 默认：四人东
+        pyautogui.click(x, y)
+
+    def actionBeginAlternativeGame(self):
+        # 匹配休闲普通场
+        time.sleep(2)
+        x, y = np.int32(PosTransfer(Layout.bisaiChang, self.M))
+        pyautogui.click(x, y)
+        time.sleep(2)
+        x, y = np.int32(PosTransfer(Layout.menuButtons[1], self.M))
+        pyautogui.click(x, y)
+        time.sleep(2)
+        x, y = np.int32(PosTransfer(Layout.menuButtons[0], self.M))  # 默认：四人东
         pyautogui.click(x, y)
