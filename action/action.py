@@ -272,7 +272,11 @@ class GUIInterface:
         # 点击吃碰杠胡立直自摸
         x0, y0 = np.int32(PosTransfer([0, 0], self.M))
         x1, y1 = np.int32(PosTransfer(Layout.size, self.M))
-        zoom = (x1-x0)/Layout.size[0]
+        # Button width on 1080p screen is about 268px
+        # Button width of template image is 220px
+        # All those patchs and workarounds are unnecessary
+        # Cause the only bug here is template size mismatch
+        zoom = (x1-x0)/Layout.size[0]*268/220
         n, m, _ = buttonImg.shape
         n = int(n*zoom)
         m = int(m*zoom)
