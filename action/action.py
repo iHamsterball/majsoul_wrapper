@@ -459,7 +459,7 @@ class GUIInterface:
         x, y = np.int32(PosTransfer(Layout.menuButtons[match], self.M))  # 默认：四人东
         pyautogui.click(x, y)
 
-    def actionBeginAlternativeGame(self):
+    def actionBeginAlternativeGame(self, match: int=0):
         # 匹配休闲普通场
         time.sleep(2)
         x, y = np.int32(PosTransfer(Layout.bisaiChang, self.M))
@@ -468,5 +468,5 @@ class GUIInterface:
         x, y = np.int32(PosTransfer(Layout.menuButtons[1], self.M))
         pyautogui.click(x, y)
         time.sleep(2)
-        x, y = np.int32(PosTransfer(Layout.menuButtons[0], self.M))  # 默认：四人东
+        x, y = np.int32(PosTransfer(Layout.menuButtons[match], self.M))  # 默认：四人东
         pyautogui.click(x, y)
