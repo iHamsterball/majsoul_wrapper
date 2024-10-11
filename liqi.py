@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#捕获websocket数据并解析雀魂"动作"语义为Json
+# 捕获WebSocket数据并解析雀魂"动作"语义为json
 import os
 import sys
 import time
@@ -37,7 +37,7 @@ class MsgType(Enum):
 class LiqiProto:
 
     def __init__(self):
-        #解析一局的WS消息队列
+        # 解析一局的WS消息队列
         self.tot = 0  # 当前总共解析的包数量
         # (method_name:str,pb.MethodObj) for 256 sliding windows; req->res
         self.res_type = dict()  # int -> (method_name,pb2obj)
@@ -49,7 +49,7 @@ class LiqiProto:
         self.res_type.clear()
 
     def parse(self, flow_msg) -> bool:
-        #parse一帧WS flow msg，要求按顺序parse
+        # parse一帧WS flow msg，要求按顺序parse
         buf = flow_msg.content
         from_client = flow_msg.from_client
         result = dict()
@@ -68,10 +68,10 @@ class LiqiProto:
             proto_obj = liqi_pb2_notify.FromString(msg_block[1]['data'])
             dict_obj = MessageToDict(proto_obj)
             if 'data' in dict_obj:
-                B = base64.b64decode(dict_obj['data'])
-                action_proto_obj = getattr(pb, dict_obj['name']).FromString(B)
-                action_dict_obj = MessageToDict(action_proto_obj)
-                dict_obj['data'] = action_dict_obj
+                encrypted = base64.b64decode(dict_obj['data'])
+                decrypted = self.decode(encrypted)
+                action_proto_obj = getattr(pb, dict_obj["name"]).FromString(decrypted)
+                dict_obj['data'] = MessageToDict(action_proto_obj)
             msg_id = self.tot
         else:
             msg_id = struct.unpack('<H', buf[1:3])[0]   # 小端序解析报文编号(0~255)
@@ -103,6 +103,14 @@ class LiqiProto:
                   'method': method_name, 'data': dict_obj}
         self.tot += 1
         return result
+
+    def decode(self, data: bytes):
+        keys = [0x84, 0x5e, 0x4e, 0x42, 0x39, 0xa2, 0x1f, 0x60, 0x1c]
+        data = bytearray(data)
+        for i in range(len(data)):
+            u = (23 ^ len(data)) + 5 * i + keys[i % len(keys)] & 255
+            data[i] ^= u
+        return bytes(data)
 
 
 def tamperUsetime(flow_msg) -> bool:
