@@ -68,10 +68,7 @@ class LiqiProto:
             proto_obj = liqi_pb2_notify.FromString(msg_block[1]['data'])
             dict_obj = MessageToDict(proto_obj)
             if 'data' in dict_obj:
-                encrypted = base64.b64decode(dict_obj['data'])
-                decrypted = self.decode(encrypted)
-                action_proto_obj = getattr(pb, dict_obj["name"]).FromString(decrypted)
-                dict_obj['data'] = MessageToDict(action_proto_obj)
+                dict_obj['data'] = self.decode(dict_obj['name'], dict_obj['data'])
             msg_id = self.tot
         else:
             msg_id = struct.unpack('<H', buf[1:3])[0]   # 小端序解析报文编号(0~255)
@@ -104,7 +101,13 @@ class LiqiProto:
         self.tot += 1
         return result
 
-    def decode(self, data: bytes):
+    def decode(self, method, data_str):
+        encrypted = base64.b64decode(data_str)
+        decrypted = self.decrypt(encrypted)
+        action_proto_obj = getattr(pb, method).FromString(decrypted)
+        return MessageToDict(action_proto_obj)
+
+    def decrypt(self, data: bytes):
         keys = [0x84, 0x5e, 0x4e, 0x42, 0x39, 0xa2, 0x1f, 0x60, 0x1c]
         data = bytearray(data)
         for i in range(len(data)):
